@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ma Légende — carrière de footballeur</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(160deg, #0b3d2e, #14532d);
+    color: #eef5ee;
+    min-height: 100vh; display: flex; justify-content: center;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 700px; width: 100%; }
+  h1 { text-align: center; font-size: 2rem; margin-bottom: .3rem; letter-spacing: 1px; }
+  .meta { text-align: center; color: #9fd3a8; font-size: .85rem; margin-bottom: 1.5rem; }
+  .stats { display: flex; flex-wrap: wrap; gap: .6rem 1.5rem; justify-content: center; margin-bottom: 1.5rem; font-size: .9rem; color: #c9e6cd; }
+  .stats b { color: #ffd54d; }
+  .card {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 12px; padding: 1.8rem;
+    line-height: 1.7; font-size: 1.05rem; margin-bottom: 1.5rem;
+    white-space: pre-line; animation: fade .5s ease;
+  }
+  @keyframes fade { from { opacity: 0; transform: translateY(8px); } }
+  .event {
+    color: #ffd54d; font-style: italic;
+    border-left: 3px solid #ffd54d;
+    padding-left: 1rem; display: block; margin: 1rem 0;
+  }
+  .choices { display: flex; flex-direction: column; gap: .8rem; }
+  .choices button {
+    background: rgba(255,213,77,.1);
+    border: 1px solid #ffd54d; color: #eef5ee;
+    padding: 1rem; border-radius: 8px;
+    font-family: inherit; font-size: 1rem;
+    cursor: pointer; transition: all .2s; text-align: left;
+  }
+  .choices button:hover { background: rgba(255,213,77,.25); transform: translateX(4px); }
+  .reset { display: block; margin: 2rem auto 0; background: none; border: none; color: #7fae8a; cursor: pointer; font-family: inherit; text-decoration: underline; }
+  .finale { border-color: #ffd54d; box-shadow: 0 0 30px rgba(255,213,77,.15); }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>⚽ Ma Légende ⚽</h1>
+  <div class="meta">Ta carrière de footballeur — de 16 ans à la retraite</div>
+  <div class="stats" id="stats"></div>
+  <div class="card" id="story"></div>
+  <div class="choices" id="choices"></div>
+  <button class="reset" onclick="resetGame()">↺ Nouvelle carrière</button>
+</div>
+
+<script>
+// ---- Événements aléatoires de saison ----
+const RANDOM_EVENTS = [
+  "Une pluie torrentielle s'abat sur le stade : le match se joue dans la boue.",
+  "Le stade est en ébullition, 60 000 supporters scandent ton nom.",
+  "Un scout du Real Madrid est venu te voir en tribune, dit la rumeur.",
+  "Tu te réveilles avec une légère douleur à la cuisse… rien de grave, espère-tu.",
+  "Les journalistes te surnomment « le phénomène ».",
+  "Ton idole d'enfance t'envoie un message d'encouragement.",
+  "Ton agent annonce une offre folle d'un club de Premier League.",
+  "Tu es sur la couverture de L'Équipe Magazine.",
+  "Une vidéo de ton dernier but fait 10 millions de vues.",
+  "Le vestiaire t'élit homme du match à l'unanimité."
+];
+
+// ---- L'arbre complet de la carrière ----
+const STORY = {
+  // ═══════════ 16-18 ANS : LA FORMATION ═══════════
+  start: {
+    text: (e) => `Tu as 16 ans. Meilleur buteur du tournoi national U17, tu attire tous les regards.\n\n⟡ ${e}\n\nTrois pistes s'offrent à toi.`,
+    choices: [
+      { text: "Clairefontaine — la voie royale française", to: "clairefontaine" },
+      { text: "La Masia à Barcelone — l'école du jeu", to: "masia", effect: { technique: 2 } },
+      { text: "Rester dans le club de ton quartier", to: "quartier", effect: { mental: 2 } }
+    ]
+  },
+  clairefontaine: {
+    text: (e) => `Deux ans d'internat exigeant. À 18 ans, un club de Ligue 1 te signe pro.\n\n⟡ ${e}`,
+    choices: [
+      { text: "Percer en Ligue 1 et gagner ta place", to: "ligue1", effect: { forme: 1 } },
+      { text: "Sauter l'étape : l'Angleterre t'appelle", to: "angleterre", effect: { argent: 20, reputation: 1 } }
+    ]
+  },
+  masia: {
+    text: (e) => `Barcelone, le tiki-taka dans le sang. À 18 ans, le coach de l'équipe première te convoque.\n\n⟡ ${e}`,
+    choices: [
+      { text: "Saisir ta chance au Camp Nou", to: "barca_star", effect: { reputation: 1 } },
+      { text: "Prêt en Liga pour du temps de jeu", to: "pret_espagne", effect: { forme: 2 } }
+    ]
+  },
+  quartier: {
+    text: (e) => `Fidèle à ton club amateur, tu deviens la star du National à 18 ans. Les gros clubs reviennent.\n\n⟡ ${e}`,
+    choices: [
+      { text: "Signer à l'AS Monaco", to: "ligue1", effect: { mental: 1 } },
+      { text: "L'aventure allemande au BVB", to: "dortmund", effect: { forme: 1 } }
+    ]
+  },
+
+  // ═══════════ 19-21 ANS : L'EXPLOSION ═══════════
+  ligue1: {
+    text: (e) => `Saison de rêve : 15 buts, 8 passes décisives. Les grands d'Europe s'arrachent ton profil.\n\n⟡ ${e}`,
+    choices: [
+      { text: "Le Real Madrid propose 80 M€", to: "real", effect: { argent: 80, reputation: 2 } },
+      { text: "Le Liverpool de la Premier League", to: "liverpool", effect: { argent: 70, reputation: 1, forme: 1 } },
+      { text: "Rester dans ton club formateur", to: "maison", effect: { mental: 2 } }
+    ]
+  },
+  angleterre: {
+    text: (e) => `Premier match en Premier League : but après 3 minutes. Les supporters t'adorent déjà.\n\n⟡ ${e}`,
+    choices: [
+      { text: "Devenir le leader de l'attaque", to: "liverpool", effect: { forme: 1, reputation: 1 } },
+      { text: "Un géant espagnal t'appelle", to: "real", effect: { argent: 80, reputation: 2 } }
+    ]
+  },
+  pret_espagne: {
+    text: (e) => `20 buts en Liga. Le Barça te veut de retour… mais d'autres aussi.\n\n⟡ ${e}`,
+    choices: [
+      { text: "Retour au Barça en titulaire", to: "barca_star", effect: { reputation: 1 } },
+      { text: "Le Borussia Dortmund et son Mur Jaune", to: "dortmund", effect: { forme: 1 } }
+    ]
+  },
+  dortmund: {
+    text: (e) => `Le Mur Jaune vibre à chacun de tes buts. Mais un départ se dessine…\n\n⟡ ${e}`,
+    choices: [
+      { text: "Real Madrid, la prochaine étape logique", to: "real", effect: { argent: 90, reputation: 2 } },
+      { text: "Liverpool et son 'You'll Never Walk Alone'", to: "liverpool", effect: { argent: 75, reputation: 1 } }
+    ]
+  },
+
+  // ═══════════ 22-24 ANS : LE SOMMET DES CLUBS ═══════════
+  real: {
+    text: (e) => `Santiago Bernabéu. Le public blanc salue ta première saison : 25 buts, un trophée.\n\n⟡ ${e}\n\nEt maintenant, la sélection…`,
+    choices: [
+      { text: "Répondre présent aux Bleus", to: "bleus", effect: { reputation: 1 } },
+      { text: "Fuir les Bleus ? Jamais. Mais d'abord : la Ligue des champions.", to: "ucl", effect: { forme: 1 } }
+    ]
+  },
+  liverpool: {
+    text: (e) => `Anfield chante ton nom. Meilleur buteur de Premier League, les Bleus n'ont plus le choix.\n\n⟡ ${e}`,
+    choices: [
+      { text: "Répondre présent aux Bleus", to: "bleus", effect: { reputation: 1 } },
+      { text: "La Ligue des champions d'abord", to: "ucl", effect: { forme: 1 } }
+    ]
+  },
+  barca_star: {
+    text: (e) => `Camp Nou se lève pour toi. Classico gagné avec un doublé.\n\n⟡ ${e}`,
+    choices: [
+      { text: "Les Bleus t'attendent", to: "bleus", effect: { reputation: 1 } },
+      { text: "La Ligue des champions pour sceller ton statut", to: "ucl", effect: { forme: 1 } }
+    ]
+  },
+  maison: {
+    text: (e) => `Le club de ton cœur. L'amour du public ne s'achète pas. Tu es devenu capitaine.\n\n⟡ ${e}`,
+    choices: [
+      { text: "Les Bleus n'ont pas pu t'ignorer plus longtemps", to: "bleus", effect: { reputation: 1 } },
+      { text: "Une Ligue des champions historique pour le club", to: "ucl", effect: { mental: 1 } }
+    ]
+  },
+
+  // ═══════════ LA LIGUE DES CHAMPIONS ═══════════
+  ucl: {
+    text: (e) => `Finale de Ligue des champions. 88e minute, score 1-1. Le ballon arrive sur ton pied gauche…\n\n⟡ ${e}`,
+    choices: [
+      { text: "Frapper pleine lucarne", to: "ucl_duel", effect: { forme: 1 } },
+      { text: "Servir ton coéquipier seul au point de penalty", to: "ucl_duel", effect: { mental: 2 } },
+      { text: "Dribbler tout le monde puis frapper", to: "ucl_duel", effect: { technique: 1, forme: -1 } }
+    ]
+  },
+  ucl_duel: {
+    text: () => "",
+    special: "ucl_duel"
+  },
+
+  // ═══════════ LES BLEUS ═══════════
+  bleus: {
+    text: (e) => `Première sélection. La Marseillaise te donne la chair de poule. Puis, deux ans plus tard : la Coupe du monde.\n\n⟡ ${e}`,
+    choices: [
+      { text: "Aborder la compétition comme un chef de meute", to: "mondial", effect: { mental: 1 } },
+      { text: "Y aller comme un outsider sans pression", to: "mondial", effect: { forme: 1 } }
+    ]
+  },
+
+  // ═══════════ LA COUPE DU MONDE ═══════════
+  mondial: {
+    text: () => "",
+    special: "mondial"
+  },
+  mondial_victoire: {
+    text: (e) => `🏆 COUPE DU MONDE GAGNÉE ! Tu soulèves le trophée sous les étoiles. La France est championne, et tu es élu meilleur joueur du tournoi.\n\n⟡ ${e}\n\nReste la plus grande des consécrations individuelles…`,
+    choices: [
+      { text: "Le Ballon d'Or est à portée de main", to: "ballon", effect: { reputation: 2 } },
+      { text: "Je ne joue pas pour les trophées individuels", to: "carrefour", effect: { mental: 2 } }
+    ]
+  },
+  mondial_defaite: {
+    text: (e) => `💔 Défaite en finale aux tirs au but. Le silence dans le vestiaire est plus lourd que le trophée que tu n'as pas soulevé.\n\n⟡ ${e}\n\nMais une carrière ne se résume pas à un match.`,
+    choices: [
+      { text: "Rebondir : la saison prochaine sera mienne", to: "carrefour", effect: { mental: 2, forme: 1 } },
+      { text: "Prendre sa retraite internationale", to: "carrefour", effect: { mental: -1, argent: 5 } }
+    ]
+  },
+
+  // ═══════════ LE BALLON D'OR ═══════════
+  ballon: {
+    text: () => "",
+    special: "ballon"
+  },
+  ballon_gagne: {
+    text: (e) => `🥇 BALLON D'OR ! Sur la scène du Théâtre du Châtelet, ton nom est appelé. Ton regard se porte vers ta mère, dans la salle, en larmes. Le sommet absolu.\n\n⟡ ${e}`,
+    choices: [{ text: "Vivre la fin de carrière en légende", to: "carrefour", effect: { reputation: 2 } }]
+  },
+  ballon_perdu: {
+    text: (e) => `2e au Ballon d'Or. Une déception piquante… mais tu repars avec une motivation de champion.\n\n⟡ ${e}`,
+    choices: [{ text: "La suite de la carrière", to: "carrefour", effect: { mental: 1 } }]
+  },
+
+  // ═══════════ LE CARREFOIR FINAL (30-35 ANS) ═══════════
+  carrefour: {
+    text: (e) => `Tu as 30 ans. Le corps suit encore, mais chaque douleur dure un peu plus longtemps. Deux voies s'offrent à toi.\n\n⟡ ${e}`,
+    choices: [
+      { text: "Continuer au plus haut niveau jusqu'à 35 ans", to: "veteran", effect: { forme: -1 } },
+      { text: "Prendre sa retraite au sommet", to: "finale" },
+      { text: "Retourner dans le club de tes débuts pour une dernière danse", to: "derniere_danse", effect: { mental: 2 } }
+    ]
+  },
+  veteran: {
+    text: (e) => `Tu joues jusqu'à 34 ans avec l'intelligence d'un ancien. Puis, un tacle appuyé… ton genou craque.\n\n⟡ ${e}`,
+    choices: [
+      { text: "La rééducation est trop longue : retraite", to: "finale", effect: { forme: -3 } },
+      { text: "Une dernière saison en signe de défi", to: "finale", effect: { mental: 2, forme: -1 } }
+    ]
+  },
+  derniere_danse: {
+    text: (e) => `Le stade de tes débuts, plein à craquer pour toi. Tu marques un but célébré comme un sacre. C'est le moment parfait pour partir.\n\n⟡ ${e}`,
+    choices: [{ text: "Annoncer ta retraite", to: "finale" }]
+  },
+
+  // ═══════════ LA FIN (calculée selon tes stats) ═══════════
+  finale: { text: () => "", special: "finale" }
+};
+
+// ---- Moments spéciaux à suspens / aléatoires ----
+function specialUclDuel() {
+  const reussi = Math.random() < (0.4 + save.technique * 0.05 + save.forme * 0.03);
+  if (reussi) {
+    save.trophees = (save.trophees || 0) + 1;
+    save.buts += 1;
+    return { text: "⚽ LA COUP ENVOYÉE ! Le ballon lobe le gardien, la lucarne explose. LIGUE DES CHAMPIONS GAGNÉE ! Tu es européen avant même d'être international.", to: "bleus", effect: { reputation: 2, argent: 10 } };
+  }
+  return { text: "😮 Le gardien repousse ta frappe des doigts… et ton coéquipier marque le rebond. Vous gagnez quand même, mais la nuit te semblera longue.", to: "bleus", effect: { mental: 1 } };
+}
+
+function specialMondial() {
+  const force = save.forme + save.mental + save.technique;
+  const victoire = Math.random() < (0.25 + force * 0.03 + save.reputation * 0.03);
+  if (victoire) {
+    save.buts += 3;
+    return { text: "", to: "mondial_victoire", effect: { argent: 15, reputation: 2 } };
+  }
+  return { text: "", to: "mondial_defaite", effect: {} };
+}
+
+function specialBallon() {
+  const gagne = (save.reputation >= 6 && save.buts >= 60) || save.trophees >= 2;
+  return { text: "", to: gagne ? "ballon_gagne" : "ballon_perdu", effect: {} };
+}
+
+function specialFinale() {
+  const total = save.technique + save.mental + save.forme + save.reputation;
+  let titre, texte;
+  if (save.reputation >= 6 && save.trophees >= 1 && save.buts >= 60) {
+    titre = "🏆 LÉGENDE MONDIALE";
+    texte = `À ta retraite, ton palmarès est sans faille : ${save.buts} buts en carrière, ${save.trophees || 1} Ligue(s) des champions, la Coupe du monde${save.ballon ? " et un Ballon d'Or" : ""}. Une statue est érigée devant ton stade. Les enfants du monde entier portent ton maillot.`;
+  } else if (save.mental >= 8) {
+    titre = "❤️ LE HÉROS DU PEUPLE";
+    texte = `${save.buts} buts, une fidélité rare, et surtout un amour incommensurable du public. Tu n'as peut-être pas tout gagné, mais aucun joueur n'aura été autant aimé. Le football, c'est aussi ça.`;
+  } else if (total >= 22) {
+    titre = "⭐ GRAND CHAMPION";
+    texte = `${save.buts} buts en carrière et des nuits européennes inoubliables. Pas toujours la consécration ultime, mais une carrière que 99% des joueurs ne quitteront jamais en rêve.`;
+  } else {
+    titre = "🌿 LA BELLE HISTOIRE";
+    texte = `${save.buts} buts, des souvenirs, des amis, et un ballon qui aura façonné ta vie. La gloire n'était pas au bout, mais le bonheur, lui, y était.`;
+  }
+  return `── ${titre} ──\n\n${texte}\n\nÂge de la retraite : ${30 + Math.floor(Math.random() * 6)} ans. Valeur estimée de la carrière : ${save.argent} M€.\n\nMerci d'avoir joué ! 🙌`;
+}
+
+// ---- Sauvegarde ----
+let save;
+function load() {
+  save = JSON.parse(localStorage.getItem("maLegende") || "null") || {
+    node: "start", saison: 1, age: 16,
+    technique: 5, mental: 5, forme: 5,
+    reputation: 0, argent: 0, buts: 0, trophees: 0, ballon: false
+  };
+  localStorage.setItem("maLegende", JSON.stringify(save));
+}
+function persist() { localStorage.setItem("maLegende", JSON.stringify(save)); }
+function resetGame() { localStorage.removeItem("maLegende"); location.reload(); }
+
+// ---- Moteur ----
+function render() {
+  const node = STORY[save.node];
+  const event = RANDOM_EVENTS[Math.floor(Math.random() * RANDOM_EVENTS.length)];
+  let text, choices = node.choices;
+
+  if (node.special === "finale") {
+    text = specialFinale();
+    choices = [{ text: "↺ Recommencer une nouvelle carrière", to: "__reset" }];
+  } else {
+    // Moments spéciaux à aléatoire
+    if (node.special === "ucl_duel") {
+      const r = specialUclDuel();
+      text = r.text + `\n\n⟡ ${event}`;
+      choices = [{ text: "La suite…", to: r.to, effect: r.effect }];
+    } else if (node.special === "mondial") {
+      const r = specialMondial();
+      text = `🇫🇷 COUPE DU MONDE. Finale. ${save.mental >= 7 ? "Tu portes le groupe, les jeunes s'accrochent à tonexpérience." : "Le stress est immense, mais tu y es."}\n\n⟡ ${event}`;
+      choices = [{ text: "Couper vers le but…", to: r.to, effect: r.effect }];
+    } else if (node.special === "ballon") {
+      const r = specialBallon();
+      if (r.to === "ballon_gagne") save.ballon = true;
+      text = `Cérémonie du Ballon d'Or. Tu attends, entouré des plus grands. L'enveloppe s'ouvre…\n\n⟡ ${event}`;
+      choices = [{ text: "…", to: r.to, effect: r.effect }];
+    } else {
+      text = node.text(event);
+    }
+  }
+
+  document.getElementById("story").className = "card" + (node.special === "finale" ? " finale" : "");
+  document.getElementById("story").innerHTML =
+    text.replace(/⟡ (.+)/g, '<span class="event">$1</span>');
+  document.getElementById("stats").innerHTML =
+    `${save.age} ans · Saison <b>${save.saison}</b> · Buts <b>${save.buts}</b> · Réputation <b>${save.reputation}</b> · Technique <b>${save.technique}</b> · Mental <b>${save.mental}</b> · Forme <b>${save.forme}</b>`;
+
+  const box = document.getElementById("choices");
+  box.innerHTML = "";
+  choices.forEach(c => {
+    const b = document.createElement("button");
+    b.textContent = c.text;
+    b.onclick = () => {
+      if (c.to === "__reset") { resetGame(); return; }
+      if (c.effect) for (const [k, v] of Object.entries(c.effect)) save[k] = (save[k] || 0) + v;
+      save.node = c.to;
+      save.saison++; save.age++;
+      save.buts += Math.floor(Math.random() * (3 + save.forme));
+      if (save.forme > 5 && Math.random() < 0.08) {
+        save.forme -= 2; // pépin physique
+      }
+      persist();
+      render();
+    };
+    box.appendChild(b);
+  });
+}
+
+load();
+render();
+</script>
+</body>
+</html>
